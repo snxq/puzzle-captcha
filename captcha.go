@@ -48,7 +48,11 @@ func (c *puzzleCaptcha) HoleRect() image.Rectangle {
 
 func (c *puzzleCaptcha) draw(masktype PuzzleMaskType) image.Image {
 	mask := NewPuzzleMask(c.origin.Bounds(), c.holerect, c.holes, masktype)
-	dst := image.NewRGBA(c.origin.Bounds())
+	rect := c.origin.Bounds()
+	if masktype == HoleType {
+		rect = mask.Bounds()
+	}
+	dst := image.NewRGBA(rect)
 	draw.DrawMask(dst, dst.Bounds(), c.origin, image.Pt(0, 0), mask, mask.Bounds().Min, draw.Over)
 	return dst
 }

@@ -47,6 +47,10 @@ func (m *PuzzleMask) ColorModel() color.Model {
 }
 
 func (m *PuzzleMask) Bounds() image.Rectangle {
+	if m.masktype == HoleType {
+		return image.Rectangle{Min: m.hole.Min, Max: m.hole.Max}
+	}
+
 	return image.Rectangle{Min: m.whole.Min, Max: m.whole.Max}
 }
 
