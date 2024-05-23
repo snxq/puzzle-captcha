@@ -8,6 +8,7 @@ import (
 
 type PuzzleCaptcha interface {
 	Generate() (image.Image, image.Image)
+	HoleRect() image.Rectangle
 }
 
 type puzzleCaptcha struct {
@@ -39,6 +40,10 @@ func NewPuzzleCaptcha(origin image.Image, holesize, maxholes int) PuzzleCaptcha 
 
 func (c *puzzleCaptcha) Generate() (image.Image, image.Image) {
 	return c.draw(BaseType), c.draw(HoleType)
+}
+
+func (c *puzzleCaptcha) HoleRect() image.Rectangle {
+	return c.holerect
 }
 
 func (c *puzzleCaptcha) draw(masktype PuzzleMaskType) image.Image {
