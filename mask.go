@@ -3,6 +3,7 @@ package puzzlecaptcha
 import (
 	"image"
 	"image/color"
+	"math"
 )
 
 type PuzzleMaskType int
@@ -16,18 +17,39 @@ type PuzzleMask struct {
 	whole, hole image.Rectangle
 	masktype    PuzzleMaskType
 
-	Holes int // binary number 0b0001 四位分别代表上下左右
+	// binary number 0b0001
+	// These four bits respectively represent up, down, left, and right.
+	Holes int
+	// binary number 0b0001
+	// corresponds to the number of holes. 1 represents convex, 0 represents concave.
+	notches int
 
-	r         float64
-	xs, ys    []int
-	alphadiff uint8
+	r, gap           float64
+	alphadiff        uint8
+	offset           float64
+	cc               [4]image.Point
+	offsetDirections [4][2]float64
 }
 
-func NewPuzzleMask(whole, hole image.Rectangle, holes int, masktype PuzzleMaskType) *PuzzleMask {
-	m := &PuzzleMask{whole: whole, hole: hole, Holes: holes, masktype: masktype}
-	m.r = float64(min(m.hole.Max.X-m.hole.Min.X, m.hole.Max.Y-m.hole.Min.Y)) / 4
-	m.xs = []int{m.hole.Max.X, m.hole.Min.X, (m.hole.Max.X + m.hole.Min.X) / 2, (m.hole.Max.X + m.hole.Min.X) / 2}
-	m.ys = []int{(m.hole.Max.Y + m.hole.Min.Y) / 2, (m.hole.Max.Y + m.hole.Min.Y) / 2, m.hole.Min.Y, m.hole.Max.Y}
+func NewPuzzleMask(whole, hole image.Rectangle, options ...Option) *PuzzleMask {
+	m := &PuzzleMask{whole: whole, hole: hole}
+	for _, o := range options {
+		o(m)
+	}
+
+	alpha := 1.5
+	m.r = float64(min(m.hole.Max.X-m.hole.Min.X, m.hole.Max.Y-m.hole.Min.Y)) / (2*alpha + 4)
+	m.gap = m.r * alpha
+
+	// initial circle center
+	m.cc = [4]image.Point{
+		image.Pt((m.hole.Min.X+m.hole.Max.X)/2, m.hole.Max.Y-int(m.gap)),
+		image.Pt((m.hole.Min.X+m.hole.Max.X)/2, m.hole.Min.Y+int(m.gap)),
+		image.Pt(m.hole.Min.X+int(m.gap), (m.hole.Min.Y+m.hole.Max.Y)/2),
+		image.Pt(m.hole.Max.X-int(m.gap), (m.hole.Min.Y+m.hole.Max.Y)/2),
+	}
+	m.offset = math.Abs(m.gap - m.r)
+	m.offsetDirections = [4][2]float64{{0, -1}, {0, 1}, {1, 0}, {-1, 0}}
 
 	switch m.masktype {
 	case HoleType:
@@ -53,18 +75,33 @@ func (m *PuzzleMask) Bounds() image.Rectangle {
 }
 
 func (m *PuzzleMask) At(x, y int) color.Color {
-	if x < m.hole.Min.X || x > m.hole.Max.X || y < m.hole.Min.Y || y > m.hole.Max.Y {
-		return color.Alpha{255 - m.alphadiff}
-	}
-	for i, holes := 0, m.Holes; holes > 0; holes, i = holes>>1, i+1 {
+	for i, holes, notches := 0, m.Holes, m.notches; holes > 0; holes, i, notches = holes>>1, i+1, notches>>1 {
 		if holes%2 == 0 {
 			continue
 		}
+		var (
+			cc               color.Color
+			xoffset, yoffset = m.offset, m.offset
+		)
 
-		xx, yy, rr := float64(x-m.xs[i]), float64(y-m.ys[i]), float64(m.r)
-		if xx*xx+yy*yy < rr*rr {
-			return color.Alpha{255 - m.alphadiff}
+		if notches%2 == 0 {
+			xoffset *= m.offsetDirections[i][0]
+			yoffset *= m.offsetDirections[i][1]
+			cc = color.Alpha{255 - m.alphadiff}
+		} else {
+			xoffset *= -m.offsetDirections[i][0]
+			yoffset *= -m.offsetDirections[i][1]
+			cc = color.Alpha{0 + m.alphadiff}
 		}
+
+		xx, yy, rr := float64(x)-(float64(m.cc[i].X)+xoffset), float64(y)-(float64(m.cc[i].Y)+yoffset), float64(m.r)
+		if xx*xx+yy*yy < rr*rr {
+			return cc
+		}
+	}
+
+	if x < m.hole.Min.X+int(m.gap) || x > m.hole.Max.X-int(m.gap) || y < m.hole.Min.Y+int(m.gap) || y > m.hole.Max.Y-int(m.gap) {
+		return color.Alpha{255 - m.alphadiff}
 	}
 
 	return color.Alpha{0 + m.alphadiff}
