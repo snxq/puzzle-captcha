@@ -3,8 +3,6 @@ package puzzlecaptcha
 import (
 	"image"
 	"image/color"
-
-	"golang.org/x/exp/constraints"
 )
 
 type PuzzleMaskType int
@@ -72,7 +70,7 @@ func (m *PuzzleMask) At(x, y int) color.Color {
 	return color.Alpha{0 + m.alphadiff}
 }
 
-func min[T constraints.Ordered](a, b T) T {
+func min(a, b int) int {
 	if a < b {
 		return a
 	}
