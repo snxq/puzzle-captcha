@@ -3,7 +3,7 @@ package puzzlecaptcha
 import (
 	"image"
 	"image/draw"
-	"math/rand/v2"
+	"math/rand"
 )
 
 type PuzzleCaptcha interface {
@@ -18,7 +18,7 @@ type puzzleCaptcha struct {
 }
 
 func NewPuzzleCaptcha(origin image.Image, holesize, maxholes int) PuzzleCaptcha {
-	holeX, holeY := rand.IntN(origin.Bounds().Dx()-holesize), rand.IntN(origin.Bounds().Dy()-holesize)
+	holeX, holeY := rand.Intn(origin.Bounds().Dx()-holesize), rand.Intn(origin.Bounds().Dy()-holesize)
 	holes := randomInt(4, maxholes)
 	notches := randomInt(4, 4)
 
@@ -37,7 +37,7 @@ func randomInt(number, max int) int {
 			result = result << 1
 			continue
 		}
-		v := rand.IntN(100) % 2
+		v := rand.Intn(100) % 2
 		if v == 1 {
 			m++
 		}
