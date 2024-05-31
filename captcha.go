@@ -50,7 +50,9 @@ func randomInt(number, max int) int {
 }
 
 func (c *puzzleCaptcha) Generate() (image.Image, image.Image) {
-	return c.draw(BaseType), c.draw(HoleType)
+	return c.draw(BaseType), c.draw(HoleType).(interface {
+		SubImage(r image.Rectangle) image.Image
+	}).SubImage(c.holerect)
 }
 
 func (c *puzzleCaptcha) HoleRect() image.Rectangle {
