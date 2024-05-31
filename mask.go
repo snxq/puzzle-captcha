@@ -13,6 +13,12 @@ const (
 	BaseType
 )
 
+var (
+	// Alpha represents the distance from the intersection points of the circle
+	// with the inner rectangle to the outer rectangle.
+	Alpha = 1.8
+)
+
 type PuzzleMask struct {
 	whole, hole image.Rectangle
 	masktype    PuzzleMaskType
@@ -37,9 +43,8 @@ func NewPuzzleMask(whole, hole image.Rectangle, options ...Option) *PuzzleMask {
 		o(m)
 	}
 
-	alpha := 1.5
-	m.r = float64(min(m.hole.Max.X-m.hole.Min.X, m.hole.Max.Y-m.hole.Min.Y)) / (2*alpha + 4)
-	m.gap = m.r * alpha
+	m.r = float64(min(m.hole.Max.X-m.hole.Min.X, m.hole.Max.Y-m.hole.Min.Y)) / (2*Alpha + 4)
+	m.gap = m.r * Alpha
 
 	// initial circle center
 	m.cc = [4]image.Point{
